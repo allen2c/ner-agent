@@ -1,6 +1,6 @@
 [project]
 authors = [{ name = "Allen Chou", email = "f1470891079@gmail.com" }]
-dependencies = ["openai", "openai-agents", "pydantic (>=2)"]
+dependencies = ["openai", "openai-agents", "pydantic (>=2)", "str-or-none"]
 description = "A simple NER agent"
 license = { text = "MIT" }
 name = "ner-agent"
