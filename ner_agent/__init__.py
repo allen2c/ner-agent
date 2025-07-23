@@ -17,10 +17,6 @@ DEFAULT_MODEL = "gpt-4.1-nano"
 
 
 class EntityType(StrEnum):
-    """
-    A simplified set of 12 entity types, consolidated from spaCy's standard 18.
-    """
-
     PERSON = "PERSON"
     NORP = "NORP"
     FAC = "FAC"
@@ -64,27 +60,27 @@ class NerAgent:
 
         # Examples
 
-        text: "Elon Musk visited Tesla's Gigafactory in Austin on March 15, 2024, and announced a 20% increase in production capacity."
+        text: '''Elon Musk visited Tesla's Gigafactory in Austin on March 15, 2024, and announced a 20% increase in production capacity.'''
         entities: [Elon Musk](#PERSON)|[Tesla](#ORG)|[Gigafactory](#FAC)|[Austin](#LOCATION)|[March 15, 2024](#DATETIME)|[20%](#NUMERIC)
 
-        text: "La presidenta mexicana visitó la sede de las Naciones Unidas en Nueva York el martes pasado para discutir los derechos humanos."
+        text: '''La presidenta mexicana visitó la sede de las Naciones Unidas en Nueva York el martes pasado para discutir los derechos humanos.'''
         entities: [mexicana](#NORP)|[Naciones Unidas](#ORG)|[Nueva York](#LOCATION)|[martes pasado](#DATETIME)|[derechos humanos](#LAW)
 
-        text: "蘋果公司在台北101發表了iPhone 15，預計售價為新台幣35,000元"
+        text: '''蘋果公司在台北101發表了iPhone 15，預計售價為新台幣35,000元'''
         entities: [蘋果公司](#ORG)|[台北101](#FAC)|[iPhone 15](#PRODUCT)|[新台幣35,000元](#NUMERIC)
 
-        text: "東京オリンピックで日本人選手が金メダルを獲得し、君が代が演奏された。"
+        text: '''東京オリンピックで日本人選手が金メダルを獲得し、君が代が演奏された。'''
         entities: [東京オリンピック](#EVENT)|[日本人](#NORP)|[金メダル](#PRODUCT)|[君が代](#WORK_OF_ART)
 
-        text: "삼성전자는 서울 강남구에서 오전 9시에 갤럭시 S24를 공개했고, 한국어 AI 기능을 강조했다."
+        text: '''삼성전자는 서울 강남구에서 오전 9시에 갤럭시 S24를 공개했고, 한국어 AI 기능을 강조했다.'''
         entities: [삼성전자](#ORG)|[서울](#LOCATION)|[강남구](#LOCATION)|[오전 9시](#DATETIME)|[갤럭시 S24](#PRODUCT)|[한국어](#LANGUAGE)
 
-        text: "The Buddhist monks from Mount Fuji will perform at Carnegie Hall next Friday, celebrating the first anniversary of their Peace Treaty."
+        text: '''The Buddhist monks from Mount Fuji will perform at Carnegie Hall next Friday, celebrating the first anniversary of their Peace Treaty.'''
         entities: [Buddhist](#NORP)|[Mount Fuji](#LOCATION)|[Carnegie Hall](#FAC)|[next Friday](#DATETIME)|[first](#NUMERIC)|[Peace Treaty](#LAW)
 
         # Input
 
-        text: {{ text }}
+        text: '''{{ text }}'''
         entities:
         """  # noqa: E501
     )
@@ -101,6 +97,7 @@ class NerAgent:
             | None
         ) = None,
         tracing_disabled: bool = True,
+        verbose: bool = False,
         **kwargs,
     ) -> "NerResult":
         if str_or_none(text) is None:
@@ -108,62 +105,100 @@ class NerAgent:
 
         chat_model = self._to_chat_model(model)
 
+        agent_instructions: str = jinja2.Template(self.instructions).render(
+            text=text,
+            entity_descriptions=entity_descriptions,
+        )
+
+        if verbose:
+            print(agent_instructions)
+
         agent = agents.Agent(
             name="ner-agent",
             model=chat_model,
-            instructions=jinja2.Template(self.instructions).render(
-                text=text,
-                entity_descriptions=entity_descriptions,
-            ),
+            model_settings=agents.ModelSettings(temperature=0.0),
+            instructions=agent_instructions,
         )
         result = await agents.Runner.run(
             agent, text, run_config=agents.RunConfig(tracing_disabled=tracing_disabled)
         )
+
+        if verbose:
+            print(str(result.final_output))
+
         return NerResult(
             text=text,
-            entities=self._parse_entities(str(result.final_output)),
+            entities=self._parse_entities(str(result.final_output), original_text=text),
         )
 
     def _parse_entities(
-        self, entity_string: str, original_text: str = ""
+        self,
+        entity_string: str,
+        original_text: str = "",
     ) -> list["Entity"]:
         """
-        Parse entities from the format: [ENTITY_TEXT](#ENTITY_TYPE)|[ENTITY_TEXT](#ENTITY_TYPE)
+        Parse entities from strings containing zero or more occurrences of the pattern
+        [ENTITY_TEXT](#ENTITY_TYPE). Robust to arbitrary whitespace, newlines, and
+        missing pipe separators.
 
         Args:
-            entity_string: The entity string to parse (output from the LLM)
-            original_text: The original input text to find entity positions in
-        """  # noqa: E501
-        entities = []
+            entity_string: Raw model output containing entity markup.
+            original_text: Original source text (optional, but recommended for spans).
 
-        # Pattern to match [text](#type) format
-        pattern = r"\[([^\]]+)\]\(#([^)]+)\)"
+        Returns:
+            List[Entity]
+        """
+        if not entity_string:
+            return []
 
-        # Split by pipe and process each entity
-        entity_parts = entity_string.strip().split("|")
+        # Global pattern: [text](#TYPE)
+        pattern = re.compile(r"\[([^\]]+)\]\(#([^)]+)\)", flags=re.IGNORECASE)
 
-        for part in entity_parts:
-            part = part.strip()
-            if not part:
+        # Map legacy / alias tags from examples to our 12-type schema
+        alias_map = {
+            "GPE": "LOCATION",
+            "LANGUAGE": "NORP",
+        }
+
+        entities: list[Entity] = []
+        used_spans: list[tuple[int, int]] = []
+
+        def _claim_span(surface: str) -> tuple[int, int]:
+            """
+            Find the next non-overlapping occurrence of `surface` in original_text.
+            Returns (-1, -1) if not found or no original_text was supplied.
+            """
+            if not original_text:
+                return (0, 0)  # maintain current default behavior when text unknown
+
+            # Search all occurrences; pick the first that doesn't overlap a prior claim.
+            for mt in re.finditer(re.escape(surface), original_text):
+                s, e = mt.span()
+                if all(not (s < ue and e > us) for us, ue in used_spans):
+                    used_spans.append((s, e))
+                    return (s, e)
+            return (-1, -1)
+
+        for m in pattern.finditer(entity_string):
+            entity_text = m.group(1).strip()
+            raw_type = m.group(2).strip().upper()
+
+            ent_type = alias_map.get(raw_type, raw_type)
+
+            # Skip unknown types to avoid validation errors downstream.
+            if ent_type not in EntityType.__members__:
                 continue
 
-            match = re.match(pattern, part)
-            if match:
-                entity_text = match.group(1)
-                entity_type = match.group(2)
+            start_pos, end_pos = _claim_span(entity_text)
 
-                # Find the position of this entity in the original text
-                start_pos = original_text.find(entity_text) if original_text else 0
-                end_pos = start_pos + len(entity_text) if start_pos != -1 else 0
-
-                entities.append(
-                    Entity(
-                        name=entity_type,
-                        value=entity_text,
-                        start=start_pos,
-                        end=end_pos,
-                    )
+            entities.append(
+                Entity(
+                    name=ent_type,
+                    value=entity_text,
+                    start=start_pos,
+                    end=end_pos,
                 )
+            )
 
         return entities
 
