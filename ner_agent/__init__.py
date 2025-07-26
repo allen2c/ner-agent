@@ -63,8 +63,8 @@ class NerAgent:
 
         # Examples
 
-        text: '''Elon Musk visited Tesla's Gigafactory in Austin on March 15, 2024, and announced a 20% increase in production capacity.'''
-        entities: [Elon Musk](#PERSON)|[Tesla](#ORG)|[Gigafactory](#FAC)|[Austin](#LOCATION)|[March 15, 2024](#DATETIME)|[20%](#NUMERIC)
+        text: '''Elon Musk visited Tesla's Gigafactory in Austin on March 15, 2024, and announced a 20% increase in production capacity, raising annual output to 500,000 vehicles.'''
+        entities: [Elon Musk](#PERSON)|[Tesla](#ORG)|[Gigafactory](#FAC)|[Austin](#LOCATION)|[March 15, 2024](#DATETIME)|[20%](#NUMERIC)|[500,000](#NUMERIC)
 
         text: '''La presidenta mexicana visitó la sede de las Naciones Unidas en Nueva York el martes pasado para discutir los derechos humanos.'''
         entities: [mexicana](#NORP)|[Naciones Unidas](#ORG)|[Nueva York](#LOCATION)|[martes pasado](#DATETIME)|[derechos humanos](#LAW)
