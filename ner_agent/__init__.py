@@ -56,6 +56,8 @@ legacy_entity_map = types.MappingProxyType(
         "PRODUCT": EntityType.PROPER_NOUN,
         "ORG": EntityType.PROPER_NOUN,
         "ORGANIZATION": EntityType.PROPER_NOUN,
+        "PROP_NOWN": EntityType.PROPER_NOUN,
+        "NRP": EntityType.NORP,
     }
 )
 
@@ -64,8 +66,8 @@ class NerAgent:
     instructions: str = textwrap.dedent(
         """
         Your task is to perform named entity recognition (NER) on the given text.
-        Output format: [ENTITY_TEXT](#ENTITY_TYPE) separated by "|" (pipes).
-        Example: [Apple](#PROPER_NOUN)|[Taipei 101](#LOCATION)|[Tim Cook](#PERSON)
+        Output format: [ENTITY_TEXT](#ENTITY_TYPE) separated by " | " (pipes).
+        Example: [Apple](#PROPER_NOUN) | [Taipei 101](#LOCATION) | [Tim Cook](#PERSON)
 
         # Entity Definitions
         {% for entity_type, entity_description in entity_descriptions.items() -%}
@@ -75,25 +77,25 @@ class NerAgent:
         # Examples
 
         text: '''Elon Musk visited Tesla's Gigafactory in Austin on March 15, 2024, and announced a 20% increase.'''
-        entities: [Elon Musk](#PERSON)|[Tesla](#PROPER_NOUN)|[Gigafactory](#LOCATION)|[Austin](#LOCATION)|[March 15, 2024](#DATETIME)|[20%](#NUMERIC)|[done](#DONE)
+        entities: [Elon Musk](#PERSON) | [Tesla](#PROPER_NOUN) | [Gigafactory](#LOCATION) | [Austin](#LOCATION) | [March 15, 2024](#DATETIME) | [20%](#NUMERIC) | [done](#DONE)
 
         text: '''La presidenta mexicana visitó la sede de las Naciones Unidas en Nueva York el martes pasado para discutir los derechos humanos.'''
-        entities: [mexicana](#NORP)|[Naciones Unidas](#PROPER_NOUN)|[Nueva York](#LOCATION)|[martes pasado](#DATETIME)|[derechos humanos](#PROPER_NOUN)|[done](#DONE)
+        entities: [mexicana](#NORP) | [Naciones Unidas](#PROPER_NOUN) | [Nueva York](#LOCATION) | [martes pasado](#DATETIME) | [derechos humanos](#PROPER_NOUN) | [done](#DONE)
 
         text: '''蘋果公司在台北101發表了iPhone 15，預計售價為新台幣35,000元'''
-        entities: [蘋果公司](#PROPER_NOUN)|[台北101](#LOCATION)|[iPhone 15](#PROPER_NOUN)|[新台幣35,000元](#NUMERIC)|[done](#DONE)
+        entities: [蘋果公司](#PROPER_NOUN) | [台北101](#LOCATION) | [iPhone 15](#PROPER_NOUN) | [新台幣35,000元](#NUMERIC) | [done](#DONE)
 
         text: '''東京オリンピックで日本人選手が金メダルを獲得し、君が代が演奏された。'''
-        entities: [東京オリンピック](#PROPER_NOUN)|[日本人](#NORP)|[金メダル](#PROPER_NOUN)|[君が代](#PROPER_NOUN)|[done](#DONE)
+        entities: [東京オリンピック](#PROPER_NOUN) | [日本人](#NORP) | [金メダル](#PROPER_NOUN) | [君が代](#PROPER_NOUN) | [done](#DONE)
 
         text: '''삼성전자는 서울 강남구에서 오전 9시에 갤럭시 S24를 공개했고, 한국어 AI 기능을 강조했다.'''
-        entities: [삼성전자](#PROPER_NOUN)|[서울](#LOCATION)|[강남구](#LOCATION)|[오전 9시](#DATETIME)|[갤럭시 S24](#PROPER_NOUN)|[한국어](#NORP)|[done](#DONE)
+        entities: [삼성전자](#PROPER_NOUN) | [서울](#LOCATION) | [강남구](#LOCATION) | [오전 9시](#DATETIME) | [갤럭시 S24](#PROPER_NOUN) | [한국어](#NORP) | [done](#DONE)
 
         text: '''The Buddhist monks from Mount Fuji will perform at Carnegie Hall next Friday, celebrating the first anniversary of their Peace Treaty.'''
-        entities: [Buddhist](#NORP)|[Mount Fuji](#LOCATION)|[Carnegie Hall](#LOCATION)|[next Friday](#DATETIME)|[first](#NUMERIC)|[Peace Treaty](#PROPER_NOUN)|[done](#DONE)
+        entities: [Buddhist](#NORP) | [Mount Fuji](#LOCATION) | [Carnegie Hall](#LOCATION) | [next Friday](#DATETIME) | [first](#NUMERIC) | [Peace Treaty](#PROPER_NOUN) | [done](#DONE)
 
         text: '''L'Hôpital Saint-Louis est un des hôpitaux de Paris.'''
-        entities: [L'Hôpital Saint-Louis](#LOCATION)|[hôpitaux](#LOCATION)|[Paris](#LOCATION)|[done](#DONE)
+        entities: [L'Hôpital Saint-Louis](#LOCATION) | [hôpitaux](#LOCATION) | [Paris](#LOCATION) | [done](#DONE)
 
         # Input
 
