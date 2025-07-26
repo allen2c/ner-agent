@@ -1,6 +1,10 @@
 import agents
+import logging_bullet_train as lbt
 import openai
 import pytest
+
+lbt.set_logger("ner_agent")
+lbt.set_logger("tests")
 
 
 @pytest.fixture(scope="module")
