@@ -163,7 +163,9 @@ class NerAgent:
             return []
 
         # Global pattern: [text](#TYPE)
-        pattern = re.compile(r"\[([^\]]+)\]\(#([^)]+)\)", flags=re.IGNORECASE)
+        pattern = re.compile(
+            r"\[([^\]]+)\]\s*\(\s*#\s*([^)]+?)\s*\)", flags=re.IGNORECASE
+        )
 
         # Map legacy / alias tags from examples to our 12-type schema
         alias_map = {
