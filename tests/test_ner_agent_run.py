@@ -12,7 +12,7 @@ TEST_CASES: list[tuple[str, str, list[Entity]]] = [
         "Elon Musk visited Tesla's Gigafactory in Austin on March 15, 2024, announcing a 20% increase.",  # noqa: E501
         [
             Entity(name=EntityType.PERSON, value="Elon Musk", start=0, end=9),
-            Entity(name=EntityType.ORG, value="Tesla", start=18, end=23),
+            Entity(name=EntityType.PROPER_NOUN, value="Tesla", start=18, end=23),
             Entity(name=EntityType.LOCATION, value="Gigafactory", start=26, end=37),
             Entity(name=EntityType.LOCATION, value="Austin", start=41, end=47),
             Entity(name=EntityType.DATETIME, value="March 15, 2024", start=51, end=65),
@@ -32,7 +32,7 @@ TEST_CASES: list[tuple[str, str, list[Entity]]] = [
         "id_en_amazon",
         "Amazon sold 1,000 Echo Dots in Q4 2023 for $150,000.",
         [
-            Entity(name=EntityType.ORG, value="Amazon", start=0, end=6),
+            Entity(name=EntityType.PROPER_NOUN, value="Amazon", start=0, end=6),
             Entity(name=EntityType.NUMERIC, value="1,000", start=12, end=17),
             Entity(name=EntityType.PROPER_NOUN, value="Echo Dots", start=18, end=27),
             Entity(name=EntityType.DATETIME, value="Q4 2023", start=31, end=38),
@@ -79,7 +79,7 @@ TEST_CASES: list[tuple[str, str, list[Entity]]] = [
         "id_zh_apple",
         "蘋果公司在台北101發表了iPhone 15，預計售價為新台幣35,000元。",
         [
-            Entity(name=EntityType.ORG, value="蘋果公司", start=0, end=4),
+            Entity(name=EntityType.PROPER_NOUN, value="蘋果公司", start=0, end=4),
             Entity(name=EntityType.LOCATION, value="台北101", start=5, end=10),
             Entity(name=EntityType.PROPER_NOUN, value="iPhone 15", start=13, end=22),
             Entity(name=EntityType.NUMERIC, value="新台幣35,000元", start=28, end=38),
@@ -89,7 +89,7 @@ TEST_CASES: list[tuple[str, str, list[Entity]]] = [
         "id_zh_law",
         "立法院於2023年12月25日通過了《個人資料保護法》修正案。",
         [
-            Entity(name=EntityType.ORG, value="立法院", start=0, end=3),
+            Entity(name=EntityType.PROPER_NOUN, value="立法院", start=0, end=3),
             Entity(name=EntityType.DATETIME, value="2023年12月25日", start=4, end=15),
             Entity(
                 name=EntityType.PROPER_NOUN, value="個人資料保護法", start=19, end=26
@@ -102,8 +102,8 @@ TEST_CASES: list[tuple[str, str, list[Entity]]] = [
         [
             Entity(name=EntityType.DATETIME, value="昨天", start=0, end=2),
             Entity(name=EntityType.DATETIME, value="上午10點", start=2, end=7),
-            Entity(name=EntityType.ORG, value="台積電", start=8, end=11),
-            Entity(name=EntityType.ORG, value="台北市政府", start=12, end=17),
+            Entity(name=EntityType.PROPER_NOUN, value="台積電", start=8, end=11),
+            Entity(name=EntityType.PROPER_NOUN, value="台北市政府", start=12, end=17),
             Entity(name=EntityType.LOCATION, value="台北", start=18, end=20),
         ],
     ),
@@ -130,7 +130,7 @@ TEST_CASES: list[tuple[str, str, list[Entity]]] = [
         "id_ja_sony",
         "ソニーは2024年3月1日にPlayStation 6を発表した。",
         [
-            Entity(name=EntityType.ORG, value="ソニー", start=0, end=3),
+            Entity(name=EntityType.PROPER_NOUN, value="ソニー", start=0, end=3),
             Entity(name=EntityType.DATETIME, value="2024年3月1日", start=4, end=13),
             Entity(
                 name=EntityType.PROPER_NOUN, value="PlayStation 6", start=14, end=27
@@ -149,7 +149,7 @@ TEST_CASES: list[tuple[str, str, list[Entity]]] = [
         "id_ko_samsung",
         "삼성전자는 서울 강남구에서 오전 9시에 갤럭시 S24를 공개했다.",
         [
-            Entity(name=EntityType.ORG, value="삼성전자", start=0, end=4),
+            Entity(name=EntityType.PROPER_NOUN, value="삼성전자", start=0, end=4),
             Entity(name=EntityType.LOCATION, value="서울", start=6, end=8),
             Entity(name=EntityType.LOCATION, value="강남구", start=9, end=12),
             Entity(name=EntityType.DATETIME, value="오전 9시", start=15, end=20),
@@ -160,7 +160,7 @@ TEST_CASES: list[tuple[str, str, list[Entity]]] = [
         "id_ko_law",
         "국회는 2024년 2월 10일에 데이터 보호법을 통과시키고 15%의 벌금을 부과했다.",
         [
-            Entity(name=EntityType.ORG, value="국회", start=0, end=2),
+            Entity(name=EntityType.PROPER_NOUN, value="국회", start=0, end=2),
             Entity(name=EntityType.DATETIME, value="2024년 2월 10일", start=4, end=16),
             Entity(
                 name=EntityType.PROPER_NOUN, value="데이터 보호법", start=18, end=25
@@ -181,7 +181,7 @@ TEST_CASES: list[tuple[str, str, list[Entity]]] = [
         "id_en_openai",
         "OpenAI released GPT-5 on January 3, 2026, pricing the API at $0.002 per 1K tokens.",  # noqa: E501
         [
-            Entity(name=EntityType.ORG, value="OpenAI"),
+            Entity(name=EntityType.PROPER_NOUN, value="OpenAI"),
             Entity(name=EntityType.PROPER_NOUN, value="GPT-5"),
             Entity(name=EntityType.DATETIME, value="January 3, 2026"),
             Entity(name=EntityType.NUMERIC, value="$0.002"),
@@ -193,7 +193,7 @@ TEST_CASES: list[tuple[str, str, list[Entity]]] = [
         "id_en_superbowl",
         "The Kansas City Chiefs won Super Bowl LVIII in Las Vegas on February 11, 2024, scoring 25 points.",  # noqa: E501
         [
-            Entity(name=EntityType.ORG, value="Kansas City Chiefs"),
+            Entity(name=EntityType.PROPER_NOUN, value="Kansas City Chiefs"),
             Entity(name=EntityType.PROPER_NOUN, value="Super Bowl LVIII"),
             Entity(name=EntityType.LOCATION, value="Las Vegas"),
             Entity(name=EntityType.DATETIME, value="February 11, 2024"),
@@ -206,9 +206,9 @@ TEST_CASES: list[tuple[str, str, list[Entity]]] = [
         "Under the GDPR, Meta was fined €1.2 billion by the Irish DPC in May 2023.",
         [
             Entity(name=EntityType.PROPER_NOUN, value="GDPR"),
-            Entity(name=EntityType.ORG, value="Meta"),
+            Entity(name=EntityType.PROPER_NOUN, value="Meta"),
             Entity(name=EntityType.NUMERIC, value="€1.2 billion"),
-            Entity(name=EntityType.ORG, value="Irish DPC"),
+            Entity(name=EntityType.PROPER_NOUN, value="Irish DPC"),
             Entity(name=EntityType.DATETIME, value="May 2023"),
         ],
     ),
@@ -227,7 +227,7 @@ TEST_CASES: list[tuple[str, str, list[Entity]]] = [
         "id_en_quote_punct",
         '"Project Starlink" by SpaceX expanded to 60 countries as of last quarter.',
         [
-            Entity(name=EntityType.ORG, value="SpaceX"),
+            Entity(name=EntityType.PROPER_NOUN, value="SpaceX"),
             Entity(name=EntityType.NUMERIC, value="60"),
             Entity(name=EntityType.DATETIME, value="last quarter"),
         ],
@@ -237,7 +237,7 @@ TEST_CASES: list[tuple[str, str, list[Entity]]] = [
         "id_en_overlap_repeat",
         "Apple opened a store in Apple Valley on 5/5/2025, and Apple fans lined up for 3 hours.",  # noqa: E501
         [
-            Entity(name=EntityType.ORG, value="Apple"),
+            Entity(name=EntityType.PROPER_NOUN, value="Apple"),
             Entity(name=EntityType.LOCATION, value="Apple Valley"),
             Entity(name=EntityType.DATETIME, value="5/5/2025"),
             Entity(name=EntityType.NUMERIC, value="3"),
@@ -250,7 +250,7 @@ TEST_CASES: list[tuple[str, str, list[Entity]]] = [
         [
             Entity(name=EntityType.DATETIME, value="2019"),
             Entity(name=EntityType.DATETIME, value="2021"),
-            Entity(name=EntityType.ORG, value="Netflix"),
+            Entity(name=EntityType.PROPER_NOUN, value="Netflix"),
             Entity(name=EntityType.NUMERIC, value="30%"),
         ],
     ),
@@ -279,7 +279,7 @@ TEST_CASES: list[tuple[str, str, list[Entity]]] = [
         "id_en_multiline",
         """NASA launched Artemis II\nfrom Kennedy Space Center on November 16, 2024.""",
         [
-            Entity(name=EntityType.ORG, value="NASA"),
+            Entity(name=EntityType.PROPER_NOUN, value="NASA"),
             Entity(name=EntityType.LOCATION, value="Kennedy Space Center"),
             Entity(name=EntityType.DATETIME, value="November 16, 2024"),
         ],
@@ -334,7 +334,7 @@ TEST_CASES: list[tuple[str, str, list[Entity]]] = [
         "id_en_scientific",
         "CERN detected a particle at 13 TeV during Run 3 in 2022.",
         [
-            Entity(name=EntityType.ORG, value="CERN"),
+            Entity(name=EntityType.PROPER_NOUN, value="CERN"),
             Entity(name=EntityType.NUMERIC, value="13"),
             Entity(name=EntityType.PROPER_NOUN, value="Run 3"),
             Entity(name=EntityType.DATETIME, value="2022"),
@@ -357,7 +357,7 @@ TEST_CASES: list[tuple[str, str, list[Entity]]] = [
         "Black Friday 2024 saw Apple sell 2 million iPhone 16 units.",
         [
             Entity(name=EntityType.PROPER_NOUN, value="Black Friday 2024"),
-            Entity(name=EntityType.ORG, value="Apple"),
+            Entity(name=EntityType.PROPER_NOUN, value="Apple"),
             Entity(name=EntityType.NUMERIC, value="2 million"),
             Entity(name=EntityType.PROPER_NOUN, value="iPhone 16"),
         ],
@@ -368,7 +368,7 @@ TEST_CASES: list[tuple[str, str, list[Entity]]] = [
         "In the 1990s, Microsoft dominated the PC market.",
         [
             Entity(name=EntityType.DATETIME, value="1990s"),
-            Entity(name=EntityType.ORG, value="Microsoft"),
+            Entity(name=EntityType.PROPER_NOUN, value="Microsoft"),
             Entity(name=EntityType.PROPER_NOUN, value="PC"),
         ],
     ),
@@ -421,7 +421,7 @@ TEST_CASES: list[tuple[str, str, list[Entity]]] = [
         [
             Entity(name=EntityType.PROPER_NOUN, value="一般資料保護規則"),
             Entity(name=EntityType.PROPER_NOUN, value="GDPR"),
-            Entity(name=EntityType.NUMERIC, value="72小時"),
+            Entity(name=EntityType.DATETIME, value="72小時"),
         ],
     ),
     # 24
@@ -448,8 +448,8 @@ TEST_CASES: list[tuple[str, str, list[Entity]]] = [
         "id_zh_duplicate_city",
         "上海市政府與上海交通大學於2022年6月1日簽署協議。",
         [
-            Entity(name=EntityType.ORG, value="上海市政府"),
-            Entity(name=EntityType.ORG, value="上海交通大學"),
+            Entity(name=EntityType.PROPER_NOUN, value="上海市政府"),
+            Entity(name=EntityType.PROPER_NOUN, value="上海交通大學"),
             Entity(name=EntityType.DATETIME, value="2022年6月1日"),
             Entity(name=EntityType.LOCATION, value="上海"),
         ],
@@ -506,7 +506,7 @@ TEST_CASES: list[tuple[str, str, list[Entity]]] = [
         "id_ja_money_percent",
         "任天堂は2025年に売上を20%増加させ、3兆円を達成した。",
         [
-            Entity(name=EntityType.ORG, value="任天堂"),
+            Entity(name=EntityType.PROPER_NOUN, value="任天堂"),
             Entity(name=EntityType.DATETIME, value="2025年"),
             Entity(name=EntityType.NUMERIC, value="20%"),
             Entity(name=EntityType.NUMERIC, value="3兆円"),
@@ -553,7 +553,7 @@ TEST_CASES: list[tuple[str, str, list[Entity]]] = [
         "id_ja_product_series",
         "ソニーはPlayStation VR2を2023年2月22日に発売した。",
         [
-            Entity(name=EntityType.ORG, value="ソニー"),
+            Entity(name=EntityType.PROPER_NOUN, value="ソニー"),
             Entity(name=EntityType.PROPER_NOUN, value="PlayStation VR2"),
             Entity(name=EntityType.DATETIME, value="2023年2月22日"),
         ],
@@ -631,7 +631,7 @@ TEST_CASES: list[tuple[str, str, list[Entity]]] = [
         "id_es_currency",
         "Barcelona pagó €750.000 por el jugador el año pasado.",
         [
-            Entity(name=EntityType.ORG, value="Barcelona"),
+            Entity(name=EntityType.PROPER_NOUN, value="Barcelona"),
             Entity(name=EntityType.NUMERIC, value="€750.000"),
             Entity(name=EntityType.DATETIME, value="el año pasado"),
         ],
@@ -679,7 +679,7 @@ TEST_CASES: list[tuple[str, str, list[Entity]]] = [
         "id_fr_product",
         "Renault a présenté la Megane E-Tech en 2022.",
         [
-            Entity(name=EntityType.ORG, value="Renault"),
+            Entity(name=EntityType.PROPER_NOUN, value="Renault"),
             Entity(name=EntityType.PROPER_NOUN, value="Megane E-Tech"),
             Entity(name=EntityType.DATETIME, value="2022"),
         ],
@@ -708,7 +708,7 @@ TEST_CASES: list[tuple[str, str, list[Entity]]] = [
         "id_de_org_auto",
         "BMW investierte 1,2 Milliarden € in München im Jahr 2024.",
         [
-            Entity(name=EntityType.ORG, value="BMW"),
+            Entity(name=EntityType.PROPER_NOUN, value="BMW"),
             Entity(name=EntityType.NUMERIC, value="1,2 Milliarden €"),
             Entity(name=EntityType.LOCATION, value="München"),
             Entity(name=EntityType.DATETIME, value="2024"),
@@ -747,7 +747,7 @@ TEST_CASES: list[tuple[str, str, list[Entity]]] = [
         "id_ru_product",
         "Яндекс представил сервис Яндекс.Плюс в 2018 году.",
         [
-            Entity(name=EntityType.ORG, value="Яндекс"),
+            Entity(name=EntityType.PROPER_NOUN, value="Яндекс"),
             Entity(name=EntityType.PROPER_NOUN, value="Яндекс.Плюс"),
             Entity(name=EntityType.DATETIME, value="2018 году"),
         ],
@@ -777,7 +777,7 @@ TEST_CASES: list[tuple[str, str, list[Entity]]] = [
         "id_ar_org_product",
         "شركة سامسونج أطلقت Galaxy Fold في 2019.",
         [
-            Entity(name=EntityType.ORG, value="سامسونج"),
+            Entity(name=EntityType.PROPER_NOUN, value="سامسونج"),
             Entity(name=EntityType.PROPER_NOUN, value="Galaxy Fold"),
             Entity(name=EntityType.DATETIME, value="2019"),
         ],
@@ -806,7 +806,7 @@ TEST_CASES: list[tuple[str, str, list[Entity]]] = [
         "id_hi_org_product",
         "टाटा मोटर्स ने 2024 में टियागो ईवी लॉन्च की।",
         [
-            Entity(name=EntityType.ORG, value="टाटा मोटर्स"),
+            Entity(name=EntityType.PROPER_NOUN, value="टाटा मोटर्स"),
             Entity(name=EntityType.DATETIME, value="2024"),
             Entity(name=EntityType.PROPER_NOUN, value="टियागो ईवी"),
         ],
@@ -816,7 +816,7 @@ TEST_CASES: list[tuple[str, str, list[Entity]]] = [
         "id_en_emoji",
         "Tesla 🚗 delivered 400k cars in Q2 2023; Elon Musk tweeted 😀.",
         [
-            Entity(name=EntityType.ORG, value="Tesla"),
+            Entity(name=EntityType.PROPER_NOUN, value="Tesla"),
             Entity(name=EntityType.NUMERIC, value="400k"),
             Entity(name=EntityType.DATETIME, value="Q2 2023"),
             Entity(name=EntityType.PERSON, value="Elon Musk"),
@@ -834,7 +834,7 @@ TEST_CASES: list[tuple[str, str, list[Entity]]] = [
         "Next month, IBM will host Think 2025 in Orlando.",
         [
             Entity(name=EntityType.DATETIME, value="Next month"),
-            Entity(name=EntityType.ORG, value="IBM"),
+            Entity(name=EntityType.PROPER_NOUN, value="IBM"),
             Entity(name=EntityType.PROPER_NOUN, value="Think 2025"),
             Entity(name=EntityType.LOCATION, value="Orlando"),
         ],
@@ -863,7 +863,7 @@ TEST_CASES: list[tuple[str, str, list[Entity]]] = [
         "id_en_product_vehicle",
         "Ford unveiled the F-150 Lightning in May 2021.",
         [
-            Entity(name=EntityType.ORG, value="Ford"),
+            Entity(name=EntityType.PROPER_NOUN, value="Ford"),
             Entity(name=EntityType.PROPER_NOUN, value="F-150 Lightning"),
             Entity(name=EntityType.DATETIME, value="May 2021"),
         ],
@@ -873,7 +873,7 @@ TEST_CASES: list[tuple[str, str, list[Entity]]] = [
         "id_en_fac_univ",
         "Classes at Harvard University resume on September 4, 2025.",
         [
-            Entity(name=EntityType.ORG, value="Harvard University"),
+            Entity(name=EntityType.PROPER_NOUN, value="Harvard University"),
             Entity(name=EntityType.DATETIME, value="September 4, 2025"),
         ],
     ),
@@ -910,7 +910,7 @@ TEST_CASES: list[tuple[str, str, list[Entity]]] = [
         "id_en_product_food",
         "Nestlé introduced KitKat Ruby in Japan in 2018.",
         [
-            Entity(name=EntityType.ORG, value="Nestlé"),
+            Entity(name=EntityType.PROPER_NOUN, value="Nestlé"),
             Entity(name=EntityType.PROPER_NOUN, value="KitKat Ruby"),
             Entity(name=EntityType.LOCATION, value="Japan"),
             Entity(name=EntityType.DATETIME, value="2018"),
@@ -971,7 +971,7 @@ TEST_CASES: list[tuple[str, str, list[Entity]]] = [
         "id_en_product_version",
         "Adobe released Photoshop 2025 Beta on April 1, 2025.",
         [
-            Entity(name=EntityType.ORG, value="Adobe"),
+            Entity(name=EntityType.PROPER_NOUN, value="Adobe"),
             Entity(name=EntityType.PROPER_NOUN, value="Photoshop 2025 Beta"),
             Entity(name=EntityType.DATETIME, value="April 1, 2025"),
         ],
@@ -1023,7 +1023,7 @@ TEST_CASES: list[tuple[str, str, list[Entity]]] = [
         "id_en_product_ai",
         "Google unveiled Gemini Ultra on December 12, 2023.",
         [
-            Entity(name=EntityType.ORG, value="Google"),
+            Entity(name=EntityType.PROPER_NOUN, value="Google"),
             Entity(name=EntityType.PROPER_NOUN, value="Gemini Ultra"),
             Entity(name=EntityType.DATETIME, value="December 12, 2023"),
         ],
@@ -1081,7 +1081,7 @@ TEST_CASES: list[tuple[str, str, list[Entity]]] = [
         "'OK Computer' by Radiohead was released in 1997.",
         [
             Entity(name=EntityType.PROPER_NOUN, value="OK Computer"),
-            Entity(name=EntityType.ORG, value="Radiohead"),
+            Entity(name=EntityType.PROPER_NOUN, value="Radiohead"),
             Entity(name=EntityType.DATETIME, value="1997"),
         ],
     ),
@@ -1090,7 +1090,7 @@ TEST_CASES: list[tuple[str, str, list[Entity]]] = [
         "id_en_event_space",
         "SpaceX's Starship reached orbit for the first time on November 18, 2023.",
         [
-            Entity(name=EntityType.ORG, value="SpaceX"),
+            Entity(name=EntityType.PROPER_NOUN, value="SpaceX"),
             Entity(name=EntityType.PROPER_NOUN, value="Starship"),
             Entity(name=EntityType.DATETIME, value="November 18, 2023"),
         ],
@@ -1110,8 +1110,8 @@ TEST_CASES: list[tuple[str, str, list[Entity]]] = [
         "id_en_org_merger",
         "AT&T merged with Time Warner in 2018 for $85 billion.",
         [
-            Entity(name=EntityType.ORG, value="AT&T"),
-            Entity(name=EntityType.ORG, value="Time Warner"),
+            Entity(name=EntityType.PROPER_NOUN, value="AT&T"),
+            Entity(name=EntityType.PROPER_NOUN, value="Time Warner"),
             Entity(name=EntityType.DATETIME, value="2018"),
             Entity(name=EntityType.NUMERIC, value="$85 billion"),
         ],
@@ -1156,7 +1156,7 @@ TEST_CASES: list[tuple[str, str, list[Entity]]] = [
         "id_en_product_food2",
         "Coca-Cola Zero Sugar was relaunched in 2021.",
         [
-            Entity(name=EntityType.ORG, value="Coca-Cola"),
+            Entity(name=EntityType.PROPER_NOUN, value="Coca-Cola"),
             Entity(name=EntityType.PROPER_NOUN, value="Zero Sugar"),
             Entity(name=EntityType.DATETIME, value="2021"),
         ],

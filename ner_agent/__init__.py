@@ -22,7 +22,6 @@ DEFAULT_MODEL = "gpt-4.1-nano"
 class EntityType(StrEnum):
     PERSON = "PERSON"
     NORP = "NORP"
-    ORG = "ORG"
     LOCATION = "LOCATION"
     DATETIME = "DATETIME"
     NUMERIC = "NUMERIC"
@@ -33,11 +32,14 @@ entity_descriptions = types.MappingProxyType(
     {
         EntityType.PERSON: "People, including fictional characters. Ex: 'Elon Musk', 'Zhuge Liang'",  # noqa: E501
         EntityType.NORP: "Nationalities, religious groups, political groups, and languages. Ex: 'Taiwanese', 'Buddhist', 'Republican', '中文'",  # noqa: E501
-        EntityType.ORG: "Companies, agencies, institutions, etc. Ex: 'Google', 'TSMC', 'United Nations'",  # noqa: E501
         EntityType.LOCATION: "Geopolitical entities and physical facilities (buildings, airports, bridges, highways, etc.). Ex: 'Taiwan', 'New York City', 'Taipei 101', 'JFK Airport'",  # noqa: E501
         EntityType.DATETIME: "Absolute or relative dates/times/periods. Ex: 'July 22, 2025', 'yesterday', '9:30 AM', 'Q1 FY2024'",  # noqa: E501
         EntityType.NUMERIC: "Numbers of any kind: money, quantities, percentages, ordinals/cardinals. Ex: '20%', '$100', '10 kg', 'first', '2,345'",  # noqa: E501
-        EntityType.PROPER_NOUN: "Named events, works of art/media, laws/treaties—and branded/named products or models. Ex: 'Hurricane Katrina', 'Mona Lisa', 'Title IX', 'World War II', 'iPhone 15', 'Tesla Model S'",  # noqa: E501
+        EntityType.PROPER_NOUN: (
+            "Named events, works of art/media, laws/treaties, branded/named products or models, "  # noqa: E501
+            "AND organizations/companies/agencies/institutions. Ex: 'Hurricane Katrina', 'Mona Lisa', "  # noqa: E501
+            "'Title IX', 'World War II', 'iPhone 15', 'Tesla', 'United Nations'"  # noqa: E501
+        ),
     }
 )
 legacy_entity_map = types.MappingProxyType(
@@ -49,6 +51,7 @@ legacy_entity_map = types.MappingProxyType(
         "LAW": EntityType.PROPER_NOUN,
         "LANGUAGE": EntityType.NORP,
         "PRODUCT": EntityType.PROPER_NOUN,
+        "ORG": EntityType.PROPER_NOUN,
     }
 )
 
@@ -58,7 +61,7 @@ class NerAgent:
         """
         Your task is to perform named entity recognition (NER) on the given text.
         Output format: [ENTITY_TEXT](#ENTITY_TYPE) separated by "|" (pipes).
-        Example: [Apple](#ORG)|[Taipei 101](#LOCATION)|[Tim Cook](#PERSON)
+        Example: [Apple](#PROPER_NOUN)|[Taipei 101](#LOCATION)|[Tim Cook](#PERSON)
 
         # Entity Definitions
         {% for entity_type, entity_description in entity_descriptions.items() -%}
@@ -68,19 +71,19 @@ class NerAgent:
         # Examples
 
         text: '''Elon Musk visited Tesla's Gigafactory in Austin on March 15, 2024, and announced a 20% increase.'''
-        entities: [Elon Musk](#PERSON)|[Tesla](#ORG)|[Gigafactory](#LOCATION)|[Austin](#LOCATION)|[March 15, 2024](#DATETIME)|[20%](#NUMERIC)
+        entities: [Elon Musk](#PERSON)|[Tesla](#PROPER_NOUN)|[Gigafactory](#LOCATION)|[Austin](#LOCATION)|[March 15, 2024](#DATETIME)|[20%](#NUMERIC)
 
         text: '''La presidenta mexicana visitó la sede de las Naciones Unidas en Nueva York el martes pasado para discutir los derechos humanos.'''
-        entities: [mexicana](#NORP)|[Naciones Unidas](#ORG)|[Nueva York](#LOCATION)|[martes pasado](#DATETIME)|[derechos humanos](#PROPER_NOUN)
+        entities: [mexicana](#NORP)|[Naciones Unidas](#PROPER_NOUN)|[Nueva York](#LOCATION)|[martes pasado](#DATETIME)|[derechos humanos](#PROPER_NOUN)
 
         text: '''蘋果公司在台北101發表了iPhone 15，預計售價為新台幣35,000元'''
-        entities: [蘋果公司](#ORG)|[台北101](#LOCATION)|[iPhone 15](#PROPER_NOUN)|[新台幣35,000元](#NUMERIC)
+        entities: [蘋果公司](#PROPER_NOUN)|[台北101](#LOCATION)|[iPhone 15](#PROPER_NOUN)|[新台幣35,000元](#NUMERIC)
 
         text: '''東京オリンピックで日本人選手が金メダルを獲得し、君が代が演奏された。'''
         entities: [東京オリンピック](#PROPER_NOUN)|[日本人](#NORP)|[金メダル](#PROPER_NOUN)|[君が代](#PROPER_NOUN)
 
         text: '''삼성전자는 서울 강남구에서 오전 9시에 갤럭시 S24를 공개했고, 한국어 AI 기능을 강조했다.'''
-        entities: [삼성전자](#ORG)|[서울](#LOCATION)|[강남구](#LOCATION)|[오전 9시](#DATETIME)|[갤럭시 S24](#PROPER_NOUN)|[한국어](#NORP)
+        entities: [삼성전자](#PROPER_NOUN)|[서울](#LOCATION)|[강남구](#LOCATION)|[오전 9시](#DATETIME)|[갤럭시 S24](#PROPER_NOUN)|[한국어](#NORP)
 
         text: '''The Buddhist monks from Mount Fuji will perform at Carnegie Hall next Friday, celebrating the first anniversary of their Peace Treaty.'''
         entities: [Buddhist](#NORP)|[Mount Fuji](#LOCATION)|[Carnegie Hall](#LOCATION)|[next Friday](#DATETIME)|[first](#NUMERIC)|[Peace Treaty](#PROPER_NOUN)
@@ -171,17 +174,6 @@ class NerAgent:
             r"\[([^\]]+)\]\s*\(\s*#\s*([^)]+?)\s*\)", flags=re.IGNORECASE
         )
 
-        # Map legacy / alias tags from examples to our 7-type schema
-        alias_map = {
-            "GPE": "LOCATION",
-            "FAC": "LOCATION",
-            "EVENT": "PROPER_NOUN",
-            "WORK_OF_ART": "PROPER_NOUN",
-            "LAW": "PROPER_NOUN",
-            "LANGUAGE": "NORP",
-            "PRODUCT": "PROPER_NOUN",
-        }
-
         entities: list[Entity] = []
         used_spans: list[tuple[int, int]] = []
 
@@ -205,7 +197,7 @@ class NerAgent:
             entity_text = m.group(1).strip()
             raw_type = m.group(2).strip().upper()
 
-            ent_type = alias_map.get(raw_type, raw_type)
+            ent_type = legacy_entity_map.get(raw_type, raw_type)
 
             # Skip unknown types to avoid validation errors downstream.
             if ent_type not in EntityType.__members__:
