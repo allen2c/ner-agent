@@ -1,7 +1,10 @@
+# ner_agent/__init__.py
+import json
 import pathlib
 import re
 import textwrap
 import types
+from dataclasses import asdict
 from enum import StrEnum
 
 import agents
@@ -125,6 +128,14 @@ class NerAgent:
 
         if verbose:
             print(str(result.final_output))
+            print(
+                "Usage:",
+                json.dumps(
+                    asdict(result.context_wrapper.usage),
+                    ensure_ascii=False,
+                    default=str,
+                ),
+            )
 
         return NerResult(
             text=text,
@@ -230,6 +241,9 @@ class Entity(pydantic.BaseModel):
     value: str
     start: int = 0
     end: int = 0
+
+
+Entities = pydantic.TypeAdapter(list[Entity])
 
 
 class NerResult(pydantic.BaseModel):
