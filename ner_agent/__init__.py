@@ -104,6 +104,38 @@ class NerAgent:
         """  # noqa: E501
     )
 
+    simple_entities_instructions: str = textwrap.dedent(
+        """
+        ## ROLE: Named Entity Recognition (NER) Specialist
+
+        Your task is to act as a highly accurate NER system. You will be given a single sentence and you must identify and extract all key, concrete entities from it.
+
+        ## INSTRUCTIONS:
+        1.  **Identify Entities**: Extract key nouns and noun phrases that represent specific people, organizations, locations, facilities, cuisines, or important objects.
+        2.  **Be Concrete**: Focus on concrete entities. Do NOT extract abstract concepts (e.g., "experience", "style", "spirit"), generic nouns (e.g., "way", "details"), adjectives, or verbs.
+        3.  **Output Format**: You MUST return a single JSON object with one key: "entities". The value should be a list of strings, where each string is an extracted entity.
+        4.  **Empty Result**: If no concrete entities are found, you MUST return an empty list: {% raw %}{"entities": []}{% endraw %}.
+        5.  **Do Not Explain**: Do not add any conversational text or explanations. Only output the JSON object.
+
+        ## EXAMPLES:
+
+        ### Example 1
+        Input: "Nvidia published their first GPU in 1999."
+        Output:
+        {% raw %}{"entities": ["Nvidia", "GPU", "1999"]}{% endraw %}
+
+        ### Example 2
+        Input: "台北文華東方酒店座落於台北市繁華商業中心與人文薈萃的敦化北路"
+        Output:
+        {% raw %}{"entities": ["台北文華東方酒店", "台北市繁華商業中心", "敦化北路"]}{% endraw %}
+
+        ## TASK:
+
+        Input: "{{ fact_text }}"
+        Output:
+        """  # noqa: E501
+    )
+
     async def run(
         self,
         text: str,
@@ -165,6 +197,74 @@ class NerAgent:
             entities=self._parse_entities(str(result.final_output), original_text=text),
         )
 
+    async def analyze_entities(
+        self,
+        text: str,
+        *,
+        model: (
+            agents.OpenAIChatCompletionsModel
+            | agents.OpenAIResponsesModel
+            | ChatModel
+            | str
+            | None
+        ) = None,
+        tracing_disabled: bool = True,
+        verbose: bool = False,
+    ) -> "NerResult":
+        if str_or_none(text) is None:
+            raise ValueError("text is required")
+
+        chat_model = self._to_chat_model(model)
+
+        class SimpleEntitiesResult(pydantic.BaseModel):
+            entities: list[str] = pydantic.Field(default_factory=list)
+
+        agent_instructions: str = (
+            jinja2.Template(self.simple_entities_instructions)
+            .render(fact_text=text)
+            .strip()
+        )
+
+        if verbose:
+            print("\n\n--- LLM INSTRUCTIONS ---\n")
+            print(agent_instructions)
+
+        agent = agents.Agent(
+            name="simple-entities-agent",
+            model=chat_model,
+            model_settings=agents.ModelSettings(temperature=0.0),
+            instructions=agent_instructions,
+            output_type=SimpleEntitiesResult,
+        )
+        result = await agents.Runner.run(
+            agent, text, run_config=agents.RunConfig(tracing_disabled=tracing_disabled)
+        )
+
+        if verbose:
+            print("\n\n--- LLM OUTPUT ---\n")
+            print(str(result.final_output))
+            print("\n--- LLM USAGE ---\n")
+            print(
+                "Usage:",
+                json.dumps(
+                    asdict(result.context_wrapper.usage),
+                    ensure_ascii=False,
+                    default=str,
+                ),
+            )
+
+        entities_result = result.final_output_as(SimpleEntitiesResult)
+
+        entities: list[Entity] = []
+        used_spans: list[tuple[int, int]] = []
+        for entity in entities_result.entities:
+            start_pos, end_pos = _claim_span(text, entity, used_spans)
+            entities.append(
+                Entity(name=entity, value=entity, start=start_pos, end=end_pos)
+            )
+
+        return NerResult(text=text, entities=entities)
+
     def _parse_entities(
         self,
         entity_string: str,
@@ -193,22 +293,6 @@ class NerAgent:
         entities: list[Entity] = []
         used_spans: list[tuple[int, int]] = []
 
-        def _claim_span(surface: str) -> tuple[int, int]:
-            """
-            Find the next non-overlapping occurrence of `surface` in original_text.
-            Returns (-1, -1) if not found or no original_text was supplied.
-            """
-            if not original_text:
-                return (0, 0)  # maintain current default behavior when text unknown
-
-            # Search all occurrences; pick the first that doesn't overlap a prior claim.
-            for mt in re.finditer(re.escape(surface), original_text):
-                s, e = mt.span()
-                if all(not (s < ue and e > us) for us, ue in used_spans):
-                    used_spans.append((s, e))
-                    return (s, e)
-            return (-1, -1)
-
         for m in pattern.finditer(entity_string):
             entity_text = m.group(1).strip()
             raw_type = m.group(2).strip().upper()
@@ -221,7 +305,7 @@ class NerAgent:
                     logger.warning(f"Unknown entity type: {raw_type}")
                 continue
 
-            start_pos, end_pos = _claim_span(entity_text)
+            start_pos, end_pos = _claim_span(original_text, entity_text, used_spans)
 
             entities.append(
                 Entity(
@@ -270,3 +354,22 @@ Entities = pydantic.TypeAdapter(list[Entity])
 class NerResult(pydantic.BaseModel):
     text: str
     entities: list[Entity] = pydantic.Field(default_factory=list)
+
+
+def _claim_span(
+    original_text: str, surface: str, used_spans: list[tuple[int, int]]
+) -> tuple[int, int]:
+    """
+    Find the next non-overlapping occurrence of `surface` in original_text.
+    Returns (-1, -1) if not found or no original_text was supplied.
+    """
+    if not original_text:
+        return (0, 0)  # maintain current default behavior when text unknown
+
+    # Search all occurrences; pick the first that doesn't overlap a prior claim.
+    for mt in re.finditer(re.escape(surface), original_text):
+        s, e = mt.span()
+        if all(not (s < ue and e > us) for us, ue in used_spans):
+            used_spans.append((s, e))
+            return (s, e)
+    return (-1, -1)
