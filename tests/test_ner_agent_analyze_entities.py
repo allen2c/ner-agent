@@ -15,7 +15,7 @@ TEST_CASES: list[tuple[str, list[str]]] = [
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("text,entities", TEST_CASES)
-async def test_ner_agent_simple_entities(
+async def test_ner_agent_analyze_entities(
     text: str,
     entities: list[str],
     chat_model: agents.OpenAIChatCompletionsModel,

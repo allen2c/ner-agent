@@ -202,6 +202,74 @@ class NerAgent:
         """  # noqa: E501
     )
 
+    relation_extraction_instructions: str = textwrap.dedent(
+        """
+        ## ROLE: Knowledge Graph Relation Extractor
+
+        You are an AI assistant that extracts structured information from a sentence. Your task is to identify relationships between entities and represent them as `(Subject, Relation, Object)` triplets.
+
+        ## CRITICAL INSTRUCTIONS:
+        1.  **Analyze the Input**: You will be given a single fact.
+        2.  **Identify Entities**: First, identify the key entities in the fact.
+        3.  **Form Triplets**: Connect the identified entities by forming one or more triplets.
+        4.  **Use Predefined Relations ONLY**: You MUST use ONLY the following three relation types:
+            - `is_a`: For classification or typing. Use when one entity IS A TYPE OF another. (e.g., "Amber is a Restaurant").
+            - `has_a`: For properties, parts, or possessions. Use when one entity HAS, OWNS, or CONTAINS another. (e.g., "Hotel has a Pool").
+            - `related_to`: A general association for all other relationships, like actions, locations, or conceptual links. (e.g., "Chef is related to Restaurant", "Hotel is related to Taipei").
+        5.  **Output Format**: You MUST return a single JSON object with one key: "triplets". The value should be a list of triplets. Each triplet must be an object with three keys: "subject", "relation", and "object".
+        6.  **Empty Result**: If no relations can be extracted, return an empty list: `{"triplets": []}`.
+
+        ## EXAMPLES:
+
+        ### Example 1 (Technology)
+        Input: "Apple Inc. is a multinational technology company headquartered in Cupertino."
+        Output:
+        {% raw %}{
+        "triplets": [
+            {"subject": "Apple Inc.", "relation": "is_a", "object": "multinational technology company"},
+            {"subject": "Apple Inc.", "relation": "has_a", "object": "headquarters in Cupertino"}
+        ]
+        }{% endraw %}
+
+        ### Example 2 (Sports)
+        Input: "LeBron James plays for the Los Angeles Lakers as a small forward."
+        Output:
+        {% raw %}{
+        "triplets": [
+            {"subject": "LeBron James", "relation": "related_to", "object": "Los Angeles Lakers"},
+            {"subject": "LeBron James", "relation": "is_a", "object": "small forward"}
+        ]
+        }{% endraw %}
+
+        ### Example 3 (Education)
+        Input: "Harvard University is located in Cambridge, Massachusetts and offers various graduate programs."
+        Output:
+        {% raw %}{
+        "triplets": [
+            {"subject": "Harvard University", "relation": "is_a", "object": "university"},
+            {"subject": "Harvard University", "relation": "has_a", "object": "various graduate programs"},
+            {"subject": "Harvard University", "relation": "related_to", "object": "Cambridge, Massachusetts"}
+        ]
+        }{% endraw %}
+
+        ### Example 4 (Healthcare)
+        Input: "Mayo Clinic specializes in cardiology and has over 2,000 physicians."
+        Output:
+        {% raw %}{
+        "triplets": [
+            {"subject": "Mayo Clinic", "relation": "is_a", "object": "clinic"},
+            {"subject": "Mayo Clinic", "relation": "has_a", "object": "over 2,000 physicians"},
+            {"subject": "Mayo Clinic", "relation": "related_to", "object": "cardiology"}
+        ]
+        }{% endraw %}
+
+        ## TASK:
+
+        Input: "{{ fact_text }}"
+        Output:
+        """  # noqa: E501
+    ).strip()
+
     async def run(
         self,
         text: str,
@@ -389,6 +457,64 @@ class NerAgent:
 
         return result.final_output_as(SynonymsAndCanonicalNameResult)
 
+    async def extract_relations(
+        self,
+        fact_text: str,
+        *,
+        model: (
+            agents.OpenAIChatCompletionsModel
+            | agents.OpenAIResponsesModel
+            | ChatModel
+            | str
+            | None
+        ) = None,
+        tracing_disabled: bool = True,
+        verbose: bool = False,
+    ) -> "RelationExtractionResult":
+        """Extracts (Subject, Relation, Object) triplets from a fact."""
+        if str_or_none(fact_text) is None:
+            raise ValueError("fact_text is required")
+
+        chat_model = self._to_chat_model(model)
+
+        agent_instructions: str = (
+            jinja2.Template(self.relation_extraction_instructions)
+            .render(fact_text=fact_text)
+            .strip()
+        )
+
+        if verbose:
+            print("\n\n--- LLM INSTRUCTIONS ---\n")
+            print(agent_instructions)
+
+        agent = agents.Agent(
+            name="relation-extraction-agent",
+            model=chat_model,
+            model_settings=agents.ModelSettings(temperature=0.0),
+            instructions=agent_instructions,
+            output_type=RelationExtractionResult,
+        )
+        result = await agents.Runner.run(
+            agent,
+            agent_instructions,
+            run_config=agents.RunConfig(tracing_disabled=tracing_disabled),
+        )
+
+        if verbose:
+            print("\n\n--- LLM OUTPUT ---\n")
+            print(str(result.final_output))
+            print("\n--- LLM USAGE ---\n")
+            print(
+                "Usage:",
+                json.dumps(
+                    asdict(result.context_wrapper.usage),
+                    ensure_ascii=False,
+                    default=str,
+                ),
+            )
+
+        return result.final_output_as(RelationExtractionResult)
+
     def _parse_entities(
         self,
         entity_string: str,
@@ -485,6 +611,20 @@ class SynonymsAndCanonicalNameResult(pydantic.BaseModel):
 
     is_synonymous: bool
     canonical_name: str | None = None
+
+
+class Triplet(pydantic.BaseModel):
+    """Represents a (Subject, Relation, Object) triplet."""
+
+    subject: str
+    relation: str
+    object: str
+
+
+class RelationExtractionResult(pydantic.BaseModel):
+    """Pydantic model for parsing the relation extraction agent's output."""
+
+    triplets: list[Triplet] = pydantic.Field(default_factory=list)
 
 
 def _claim_span(
