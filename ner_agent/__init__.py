@@ -136,6 +136,72 @@ class NerAgent:
         """  # noqa: E501
     )
 
+    synonyms_and_canonical_name_instructions: str = textwrap.dedent(
+        """
+        ## ROLE: Synonym and Canonical Name Analyst
+
+        You are an expert linguist and data normalizer. Your task is to analyze a list of potential synonyms and make two critical decisions:
+        1.  **Validation**: Determine if ALL items in the list refer to the exact same real-world entity.
+        2.  **Assignment**: If they are synonyms, select the best canonical (standard) name for the group.
+
+        ## CRITICAL RULES FOR VALIDATION:
+        - To be synonymous, all items MUST refer to the IDENTICAL entity.
+        - Items that are merely in the same category (e.g., two different hotels, two different times of day, two different Michelin star ratings) are NOT synonymous.
+        - Example of TRUE synonyms: ["Hong Kong", "香港"]
+        - Example of FALSE synonyms (same category, different entities): ["台北文華東方酒店", "置地文華東方酒店"]
+
+        ## CRITICAL RULES FOR CANONICAL NAME ASSIGNMENT:
+        - **Rule 1 (Completeness):** Choose the most complete and unambiguous name. (e.g., "Antonio Guida" is better than "Guida").
+        - **Rule 2 (Language Preference):** Prefer the English name if available.
+        - **Rule 3 (Fallback):** If no English name is present, use the most complete name from the available options.
+
+        ## OUTPUT FORMAT:
+        - You MUST respond with a single JSON object.
+        - The JSON object must have two keys:
+        1.  `"is_synonymous"`: a boolean (`true` or `false`).
+        2.  `"canonical_name"`: a string (if `is_synonymous` is `true`, otherwise `null`).
+
+        ## EXAMPLES:
+
+        ### Example 1
+        Input: `["Chef Richard Ekkebus", "Richard Ekkebus"]`
+        Output:
+        {
+        "is_synonymous": true,
+        "canonical_name": "Richard Ekkebus"
+        }
+
+        ### Example 2
+        Input: `["台北文華東方酒店", "置地文華東方酒店"]`
+        Output:
+        {
+        "is_synonymous": false,
+        "canonical_name": null
+        }
+
+        ### Example 3
+        Input: `["Hong Kong", "香港"]`
+        Output:
+        {
+        "is_synonymous": true,
+        "canonical_name": "Hong Kong"
+        }
+
+        ### Example 4
+        Input: `["一星", "三星"]`
+        Output:
+        {
+        "is_synonymous": false,
+        "canonical_name": null
+        }
+
+        ## TASK:
+
+        Input: `{{ candidate_list }}`
+        Output:
+        """  # noqa: E501
+    )
+
     async def run(
         self,
         text: str,
@@ -265,6 +331,64 @@ class NerAgent:
 
         return NerResult(text=text, entities=entities)
 
+    async def analyze_synonyms_and_canonical_name(
+        self,
+        candidate_list: list[str],
+        *,
+        model: (
+            agents.OpenAIChatCompletionsModel
+            | agents.OpenAIResponsesModel
+            | ChatModel
+            | str
+            | None
+        ) = None,
+        tracing_disabled: bool = True,
+        verbose: bool = False,
+    ) -> "SynonymsAndCanonicalNameResult":
+        if not candidate_list:
+            raise ValueError("candidate_list is required")
+
+        chat_model = self._to_chat_model(model)
+
+        agent_instructions: str = (
+            jinja2.Template(self.synonyms_and_canonical_name_instructions)
+            .render(candidate_list=json.dumps(candidate_list, ensure_ascii=False))
+            .strip()
+        )
+
+        if verbose:
+            print("\n\n--- LLM INSTRUCTIONS ---\n")
+            print(agent_instructions)
+
+        agent = agents.Agent(
+            name="synonyms-and-canonical-name-agent",
+            model=chat_model,
+            model_settings=agents.ModelSettings(temperature=0.0),
+            instructions=agent_instructions,
+            output_type=SynonymsAndCanonicalNameResult,
+        )
+
+        result = await agents.Runner.run(
+            agent,
+            agent_instructions,
+            run_config=agents.RunConfig(tracing_disabled=tracing_disabled),
+        )
+
+        if verbose:
+            print("\n\n--- LLM OUTPUT ---\n")
+            print(str(result.final_output))
+            print("\n--- LLM USAGE ---\n")
+            print(
+                "Usage:",
+                json.dumps(
+                    asdict(result.context_wrapper.usage),
+                    ensure_ascii=False,
+                    default=str,
+                ),
+            )
+
+        return result.final_output_as(SynonymsAndCanonicalNameResult)
+
     def _parse_entities(
         self,
         entity_string: str,
@@ -354,6 +478,13 @@ Entities = pydantic.TypeAdapter(list[Entity])
 class NerResult(pydantic.BaseModel):
     text: str
     entities: list[Entity] = pydantic.Field(default_factory=list)
+
+
+class SynonymsAndCanonicalNameResult(pydantic.BaseModel):
+    """Pydantic model for parsing the synonyms and canonical name agent's output."""
+
+    is_synonymous: bool
+    canonical_name: str | None = None
 
 
 def _claim_span(
