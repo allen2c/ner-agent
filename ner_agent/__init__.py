@@ -5,6 +5,7 @@ import pathlib
 import re
 import textwrap
 import types
+import typing
 from dataclasses import asdict
 from enum import StrEnum
 
@@ -281,6 +282,7 @@ class NerAgent:
             | str
             | None
         ) = None,
+        model_settings: typing.Optional[agents.ModelSettings] = None,
         tracing_disabled: bool = True,
         verbose: bool = False,
         **kwargs,
@@ -306,7 +308,7 @@ class NerAgent:
         agent = agents.Agent(
             name="ner-agent",
             model=chat_model,
-            model_settings=agents.ModelSettings(temperature=0.0),
+            model_settings=model_settings or agents.ModelSettings(),
             instructions=agent_instructions,
         )
         result = await agents.Runner.run(
@@ -342,6 +344,7 @@ class NerAgent:
             | str
             | None
         ) = None,
+        model_settings: typing.Optional[agents.ModelSettings] = None,
         tracing_disabled: bool = True,
         verbose: bool = False,
     ) -> "NerResult":
@@ -366,7 +369,7 @@ class NerAgent:
         agent = agents.Agent(
             name="simple-entities-agent",
             model=chat_model,
-            model_settings=agents.ModelSettings(temperature=0.0),
+            model_settings=model_settings or agents.ModelSettings(),
             instructions=agent_instructions,
             output_type=SimpleEntitiesResult,
         )
@@ -410,6 +413,7 @@ class NerAgent:
             | str
             | None
         ) = None,
+        model_settings: typing.Optional[agents.ModelSettings] = None,
         tracing_disabled: bool = True,
         verbose: bool = False,
     ) -> "SynonymsAndCanonicalNameResult":
@@ -431,7 +435,7 @@ class NerAgent:
         agent = agents.Agent(
             name="synonyms-and-canonical-name-agent",
             model=chat_model,
-            model_settings=agents.ModelSettings(temperature=0.0),
+            model_settings=model_settings or agents.ModelSettings(),
             instructions=agent_instructions,
             output_type=SynonymsAndCanonicalNameResult,
         )
@@ -468,6 +472,7 @@ class NerAgent:
             | str
             | None
         ) = None,
+        model_settings: typing.Optional[agents.ModelSettings] = None,
         tracing_disabled: bool = True,
         verbose: bool = False,
     ) -> "RelationExtractionResult":
@@ -490,7 +495,7 @@ class NerAgent:
         agent = agents.Agent(
             name="relation-extraction-agent",
             model=chat_model,
-            model_settings=agents.ModelSettings(temperature=0.0),
+            model_settings=model_settings or agents.ModelSettings(),
             instructions=agent_instructions,
             output_type=RelationExtractionResult,
         )
