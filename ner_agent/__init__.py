@@ -59,6 +59,7 @@ legacy_entity_map = types.MappingProxyType(
         "ORGANIZATION": EntityType.PROPER_NOUN,
         "PROP_NOWN": EntityType.PROPER_NOUN,
         "NRP": EntityType.NORP,
+        "NOUN": EntityType.PROPER_NOUN,
     }
 )
 
